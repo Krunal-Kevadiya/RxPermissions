@@ -23,18 +23,18 @@ public class RxSettingActivity extends Activity {
     }
 
     private void handleIntent() {
-        Intent intent = new Intent();
-        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent.addCategory(Intent.CATEGORY_DEFAULT);
-        intent.setData(Uri.parse("package:" + RxPermissions.getInstance(this).getPermissionBean().getStrPackage()));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivityForResult(intent, REQUEST_CODE);
+        Intent myAppSettings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + RxPermissions.getInstance(this).getPermissionBean().getStrPackage()));
+        myAppSettings.addCategory(Intent.CATEGORY_DEFAULT);
+        startActivityForResult(myAppSettings, REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CODE) {
+            RxPermissions.getInstance(this).onActivityResult(REQUEST_CODE, Activity.RESULT_OK, null);
+            finish();
+        }
         super.onActivityResult(requestCode, resultCode, data);
-        RxPermissions.getInstance(this).onActivityResult(requestCode, resultCode, data);
-        finish();
     }
 }

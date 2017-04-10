@@ -6,9 +6,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
 import android.text.TextUtils;
 
 import java.lang.ref.WeakReference;
@@ -16,7 +14,6 @@ import java.lang.ref.WeakReference;
 public class RxPermissions  {
     public static RxPermissions sSingleton;
 
-    private boolean isRational;
     private boolean isFTRation;
     private boolean isFTSetting;
     static int REQUEST_CODE = 42;
@@ -37,12 +34,11 @@ public class RxPermissions  {
     }
 
     private RxPermissions(Activity activity) {
-        isRational = false;
         mActivityReference = new WeakReference<>(activity);
         dialogCallback = new DialogCallback() {
             @Override
             public void onPositiveButton() {
-                if(isRational) {
+                if(isFTRation) {
                     startPermissionActivity();
                 } else {
                     startSettingActivity();
@@ -51,7 +47,7 @@ public class RxPermissions  {
 
             @Override
             public void onNegativeButton() {
-                if(isRational) {
+                if(isFTRation) {
                     permissionBean.setStatus(PermissionStatus.DENIED);
                     permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
                 } else {
@@ -187,6 +183,7 @@ public class RxPermissions  {
     private void showRationalMessage() {
         if(!isFTRation) {
             isFTRation = true;
+            isFTSetting = false;
             if (TextUtils.isEmpty(permissionBean.getRationalTitle()) || TextUtils.isEmpty(permissionBean.getRationalMessage()))
                 permissionCallback.onRational(dialogCallback, permissionBean.getPermission());
             else {
@@ -224,6 +221,7 @@ public class RxPermissions  {
     private void doNotAskedEnable() {
         if(!isFTSetting) {
             isFTSetting = true;
+            isFTRation = false;
             if (TextUtils.isEmpty(permissionBean.getAccessRemovedTitle()) || TextUtils.isEmpty(permissionBean.getAccessRemovedMessage())) {
                 permissionCallback.onAccessRemoved(dialogCallback, permissionBean.getPermission());
             } else {

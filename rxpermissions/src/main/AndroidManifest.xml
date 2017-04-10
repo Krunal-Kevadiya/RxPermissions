@@ -8,12 +8,10 @@
 
         <activity
             android:name="com.kevadiyakrunalk.rxpermissions.RxPermissionActivity"
-            android:launchMode="singleTop"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <activity
             android:name="com.kevadiyakrunalk.rxpermissions.RxSettingActivity"
-            android:launchMode="singleTop"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
     </application>

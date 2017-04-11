@@ -13,7 +13,8 @@ import java.lang.ref.WeakReference;
 
 public class RxPermissions  {
     public static RxPermissions sSingleton;
-
+    private boolean isShowRation;
+    private boolean isShowSetting;
     private boolean isFTRation;
     private boolean isFTSetting;
     static int REQUEST_CODE = 42;
@@ -34,14 +35,26 @@ public class RxPermissions  {
     }
 
     private RxPermissions(Activity activity) {
+        isShowRation = false;
+        isShowSetting = false;
         mActivityReference = new WeakReference<>(activity);
         dialogCallback = new DialogCallback() {
             @Override
             public void onPositiveButton() {
                 if(isFTRation) {
-                    startPermissionActivity();
+                    if(isShowRation)
+                        startPermissionActivity();
+                    else {
+                        permissionBean.setStatus(PermissionStatus.DENIED);
+                        permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                    }
                 } else {
-                    startSettingActivity();
+                    if(isShowSetting)
+                        startSettingActivity();
+                    else {
+                        permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                        permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                    }
                 }
             }
 
@@ -92,17 +105,24 @@ public class RxPermissions  {
         return sSingleton;
     }
 
-    public void checkPermission(PermissionCallback callback, String... permission) {
+    public void checkPermission(boolean showRation, boolean showSetting, PermissionCallback callback, String... permission) {
         isFTRation = isFTSetting = false;
+        isShowRation = showRation;
+        isShowSetting = showSetting;
         permissionBean.setPermission(permission);
         permissionCallback = callback;
         if(isMarshmallowOrAbove()) {
             if(isGranted(permissionBean.getPermission())) {
                 permissionBean.setStatus(PermissionStatus.GRANTED);
                 permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
-            } else if(isRationale(permissionBean.getPermission()))
-                showRationalMessage();
-            else
+            } else if(isRationale(permissionBean.getPermission())) {
+                if(isShowRation)
+                    showRationalMessage();
+                else {
+                    permissionBean.setStatus(PermissionStatus.DENIED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            } else
                 startPermissionActivity();
         } else {
             permissionBean.setStatus(PermissionStatus.GRANTED);
@@ -110,22 +130,33 @@ public class RxPermissions  {
         }
     }
 
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if(requestCode == REQUEST_CODE) {
             if(isGranted(grantResults)) {
                 permissionBean.setStatus(PermissionStatus.GRANTED);
                 permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
-            } else if(!isRationale(permissions))
-                doNotAskedEnable();
-            else
-                showRationalMessage();
+            } else if(!isRationale(permissions)) {
+                if(isShowSetting)
+                    doNotAskedEnable();
+                else {
+                    permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            } else {
+                if(isShowRation)
+                    showRationalMessage();
+                else {
+                    permissionBean.setStatus(PermissionStatus.DENIED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            }
         } else {
             permissionBean.setStatus(PermissionStatus.ERROR);
             permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
         }
     }
 
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(requestCode == REQUEST_CODE) {
             if(isGranted(permissionBean.getPermission())) {
                 permissionBean.setStatus(PermissionStatus.GRANTED);
@@ -265,7 +296,7 @@ public class RxPermissions  {
         }
     }
 
-    public void startSettingActivity() {
+    private void startSettingActivity() {
         if(mActivityReference != null && mActivityReference.get() != null) {
             Intent intent = new Intent(mActivityReference.get(), RxSettingActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

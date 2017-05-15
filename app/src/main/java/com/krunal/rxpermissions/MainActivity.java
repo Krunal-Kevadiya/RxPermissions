@@ -27,15 +27,15 @@ public class MainActivity extends AppCompatActivity {
                         .with(MainActivity.this)
                         .showRationalDialog("Allow camera, storage and location access", "Without camera, storage and location permission we are unable to take product image or save and take product image location, .Go ahead and grand permission.")
                         .showAccessRemovedDialog("Permission Error", "Setting dialog message")
-                        .checkPermission(new PermissionCallback() {
-                                             @Override
-                                             public void onPermission(PermissionStatus status, String... permission) {
-                                                 ((TextView) findViewById(R.id.textView))
-                                                         .setText("Permission -> " + status + ", granted - > " + permission + "\n");
-                                             }
+                        .checkPermission(true, true, new PermissionCallback() {
+                                    @Override
+                                    public void onPermission(PermissionStatus status, String... permission) {
+                                        ((TextView) findViewById(R.id.textView))
+                                                .setText("Permission -> " + status + ", granted - > " + permission + "\n");
+                                    }
 
-                                             @Override
-                                             public void onRational(final DialogCallback callback, String... permission) {
+                                    @Override
+                                    public void onRational(final DialogCallback callback, String... permission) {
                                                  /*AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
                                                  alertDialogBuilder.setMessage("custom rational");
                                                  alertDialogBuilder.setTitle("Rational");
@@ -57,10 +57,10 @@ public class MainActivity extends AppCompatActivity {
 
                                                  alertDialogBuilder.setCancelable(false);
                                                  alertDialogBuilder.show();*/
-                                             }
+                                    }
 
-                                             @Override
-                                             public void onAccessRemoved(final DialogCallback callback, String... permission) {
+                                    @Override
+                                    public void onAccessRemoved(final DialogCallback callback, String... permission) {
                                                  /*AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
                                                  alertDialogBuilder.setMessage("custom Access Removed");
                                                  alertDialogBuilder.setTitle("Setting");
@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
 
                                                  alertDialogBuilder.setCancelable(false);
                                                  alertDialogBuilder.show();*/
-                                             }
-                                         }, Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                    }
+                                }, Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                 Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION);
 
             }

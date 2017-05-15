@@ -8,11 +8,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.lang.ref.WeakReference;
 
 public class RxPermissions  {
-    public static volatile RxPermissions sSingleton;
+    private boolean isShowRation;
+    private boolean isShowSetting;
 
     private boolean isFTRation;
     private boolean isFTSetting;
@@ -23,25 +25,30 @@ public class RxPermissions  {
     private WeakReference<Activity> mActivityReference;
 
     public static RxPermissions getInstance() {
-        if (sSingleton == null) {
-            synchronized (RxPermissions.class) {
-                if (sSingleton == null) {
-                    sSingleton = new RxPermissions();
-                }
-            }
-        }
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
     public RxPermissions with(Activity activity) {
+        isShowRation = false;
+        isShowSetting = false;
         mActivityReference = new WeakReference<>(activity);
         dialogCallback = new DialogCallback() {
             @Override
             public void onPositiveButton() {
                 if(isFTRation) {
-                    startPermissionActivity();
+                    if(isShowRation)
+                        startPermissionActivity();
+                    else {
+                        permissionBean.setStatus(PermissionStatus.DENIED);
+                        permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                    }
                 } else {
-                    startSettingActivity();
+                    if(isShowSetting)
+                        startSettingActivity();
+                    else {
+                        permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                        permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                    }
                 }
             }
 
@@ -58,7 +65,7 @@ public class RxPermissions  {
         };
         permissionBean = new PermissionBean();
         permissionBean.setStrPackage(mActivityReference.get().getPackageName());
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
     public PermissionBean getPermissionBean() {
@@ -68,7 +75,7 @@ public class RxPermissions  {
     public RxPermissions showRationalDialog(String title, String message) {
         permissionBean.setRationalTitle(title);
         permissionBean.setRationalMessage(message);
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
     public RxPermissions showRationalDialog(int titleResId, int messageResId) {
@@ -76,13 +83,13 @@ public class RxPermissions  {
             permissionBean.setRationalTitle(mActivityReference.get().getString(titleResId));
             permissionBean.setRationalMessage(mActivityReference.get().getString(messageResId));
         }
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
     public RxPermissions showAccessRemovedDialog(String title, String message) {
         permissionBean.setAccessRemovedTitle(title);
         permissionBean.setAccessRemovedMessage(message);
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
     public RxPermissions showAccessRemovedDialog(int titleResId, int messageResId) {
@@ -90,20 +97,27 @@ public class RxPermissions  {
             permissionBean.setAccessRemovedTitle(mActivityReference.get().getString(titleResId));
             permissionBean.setAccessRemovedMessage(mActivityReference.get().getString(messageResId));
         }
-        return sSingleton;
+        return MyPermission.sSingleton;
     }
 
-    public void checkPermission(PermissionCallback callback, String... permission) {
+    public void checkPermission(boolean showRation, boolean showSetting, PermissionCallback callback, String... permission) {
         isFTRation = isFTSetting = false;
+        isShowRation = showRation;
+        isShowSetting = showSetting;
         permissionBean.setPermission(permission);
         permissionCallback = callback;
         if(isMarshmallowOrAbove()) {
             if(isGranted(permissionBean.getPermission())) {
                 permissionBean.setStatus(PermissionStatus.GRANTED);
                 permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
-            } else if(isRationale(permissionBean.getPermission()))
-                showRationalMessage();
-            else
+            } else if(isRationale(permissionBean.getPermission())) {
+                if(isShowRation)
+                    showRationalMessage();
+                else {
+                    permissionBean.setStatus(PermissionStatus.DENIED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            } else
                 startPermissionActivity();
         } else {
             permissionBean.setStatus(PermissionStatus.GRANTED);
@@ -111,15 +125,26 @@ public class RxPermissions  {
         }
     }
 
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if(requestCode == REQUEST_CODE) {
             if(isGranted(grantResults)) {
                 permissionBean.setStatus(PermissionStatus.GRANTED);
                 permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
-            } else if(!isRationale(permissions))
-                doNotAskedEnable();
-            else
-                showRationalMessage();
+            } else if(!isRationale(permissions)) {
+                if(isShowSetting)
+                    doNotAskedEnable();
+                else {
+                    permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            } else {
+                if(isShowRation)
+                    showRationalMessage();
+                else {
+                    permissionBean.setStatus(PermissionStatus.DENIED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
+            }
         } else {
             permissionBean.setStatus(PermissionStatus.ERROR);
             permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
@@ -136,11 +161,9 @@ public class RxPermissions  {
                     permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
                     permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
                 }
-            } else {
-                permissionBean.setStatus(PermissionStatus.ERROR);
-                permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
             }
-        }
+        } else
+            Log.e("NULL", (permissionCallback == null) + " | " + (permissionBean == null));
     }
 
     private boolean isMarshmallowOrAbove() {
@@ -262,7 +285,6 @@ public class RxPermissions  {
     private void startPermissionActivity() {
         if(mActivityReference != null && mActivityReference.get() != null) {
             Intent intent = new Intent(mActivityReference.get(), RxPermissionActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mActivityReference.get().startActivity(intent);
         } else {
             permissionBean.setStatus(PermissionStatus.ERROR);
@@ -270,10 +292,9 @@ public class RxPermissions  {
         }
     }
 
-    public void startSettingActivity() {
+    private void startSettingActivity() {
         if(mActivityReference != null && mActivityReference.get() != null) {
             Intent intent = new Intent(mActivityReference.get(), RxSettingActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mActivityReference.get().startActivity(intent);
         } else {
             permissionBean.setStatus(PermissionStatus.ERROR);

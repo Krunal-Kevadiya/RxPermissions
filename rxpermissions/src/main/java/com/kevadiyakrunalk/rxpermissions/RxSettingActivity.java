@@ -24,7 +24,7 @@ public class RxSettingActivity extends Activity {
 
     private void handleIntent() {
         Intent myAppSettings = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + RxPermissions.getInstance(this).getPermissionBean().getStrPackage()));
+                Uri.parse("package:" + RxPermissions.getInstance().getPermissionBean().getStrPackage()));
         myAppSettings.addCategory(Intent.CATEGORY_DEFAULT);
         startActivityForResult(myAppSettings, REQUEST_CODE);
     }
@@ -32,7 +32,7 @@ public class RxSettingActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE) {
-            RxPermissions.getInstance(this).onActivityResult(REQUEST_CODE, Activity.RESULT_OK, null);
+            RxPermissions.getInstance().onActivityResult(REQUEST_CODE, Activity.RESULT_OK, null);
             finish();
         }
         super.onActivityResult(requestCode, resultCode, data);

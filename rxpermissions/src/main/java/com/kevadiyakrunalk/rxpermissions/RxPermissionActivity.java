@@ -25,19 +25,19 @@ public class RxPermissionActivity extends Activity {
     }
 
     private void handleIntent(Intent intent) {
-        requestPermissions(RxPermissions.getInstance(this).getPermissionBean().getPermission(), RxPermissions.REQUEST_CODE);
+        requestPermissions(RxPermissions.getInstance().getPermissionBean().getPermission(), RxPermissions.REQUEST_CODE);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        RxPermissions.getInstance(this).onRequestPermissionsResult(requestCode, permissions, grantResults);
+        RxPermissions.getInstance().onRequestPermissionsResult(requestCode, permissions, grantResults);
         finish();
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        RxPermissions.getInstance(this).onActivityResult(requestCode, resultCode, data);
+        RxPermissions.getInstance().onActivityResult(requestCode, resultCode, data);
         finish();
     }
 }

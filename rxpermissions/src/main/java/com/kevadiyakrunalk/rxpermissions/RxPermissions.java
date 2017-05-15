@@ -12,7 +12,7 @@ import android.text.TextUtils;
 import java.lang.ref.WeakReference;
 
 public class RxPermissions  {
-    public static RxPermissions sSingleton;
+    public static volatile RxPermissions sSingleton;
 
     private boolean isFTRation;
     private boolean isFTSetting;
@@ -22,18 +22,18 @@ public class RxPermissions  {
     private PermissionCallback permissionCallback;
     private WeakReference<Activity> mActivityReference;
 
-    public static RxPermissions getInstance(Activity activity) {
+    public static RxPermissions getInstance() {
         if (sSingleton == null) {
             synchronized (RxPermissions.class) {
                 if (sSingleton == null) {
-                    sSingleton = new RxPermissions(activity);
+                    sSingleton = new RxPermissions();
                 }
             }
         }
         return sSingleton;
     }
 
-    private RxPermissions(Activity activity) {
+    public RxPermissions with(Activity activity) {
         mActivityReference = new WeakReference<>(activity);
         dialogCallback = new DialogCallback() {
             @Override
@@ -58,6 +58,7 @@ public class RxPermissions  {
         };
         permissionBean = new PermissionBean();
         permissionBean.setStrPackage(mActivityReference.get().getPackageName());
+        return sSingleton;
     }
 
     public PermissionBean getPermissionBean() {
@@ -126,17 +127,19 @@ public class RxPermissions  {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == REQUEST_CODE) {
-            if(isGranted(permissionBean.getPermission())) {
-                permissionBean.setStatus(PermissionStatus.GRANTED);
-                permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+        if(permissionCallback != null && permissionBean != null) {
+            if (requestCode == REQUEST_CODE) {
+                if (isGranted(permissionBean.getPermission())) {
+                    permissionBean.setStatus(PermissionStatus.GRANTED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                } else {
+                    permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                    permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
+                }
             } else {
-                permissionBean.setStatus(PermissionStatus.ACCESS_REMOVED);
+                permissionBean.setStatus(PermissionStatus.ERROR);
                 permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
             }
-        } else {
-            permissionBean.setStatus(PermissionStatus.ERROR);
-            permissionCallback.onPermission(permissionBean.getStatus(), permissionBean.getPermission());
         }
     }
 
@@ -146,6 +149,8 @@ public class RxPermissions  {
 
     @TargetApi(Build.VERSION_CODES.M)
     private boolean isGranted(int... grantResults) {
+        if(grantResults == null)
+            return false;
         if (grantResults.length < 1)
             return false;
 
@@ -159,7 +164,7 @@ public class RxPermissions  {
 
     @TargetApi(Build.VERSION_CODES.M)
     private boolean isGranted(String... permissions) {
-        if(mActivityReference != null && mActivityReference.get()!= null) {
+        if(mActivityReference != null && mActivityReference.get()!= null && permissions != null) {
             for (String permission : permissions) {
                 if (mActivityReference.get().checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
                     return false;
@@ -171,7 +176,7 @@ public class RxPermissions  {
 
     @TargetApi(Build.VERSION_CODES.M)
     private boolean isRationale(String... permissions) {
-        if(mActivityReference != null && mActivityReference.get()!= null) {
+        if(mActivityReference != null && mActivityReference.get()!= null && permissions != null) {
             for (String permission : permissions) {
                 if (mActivityReference.get().shouldShowRequestPermissionRationale(permission))
                     return true;

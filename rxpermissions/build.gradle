@@ -39,7 +39,7 @@ dependencies {
 ext {
     PUBLISH_GROUP_ID = 'com.kevadiyakrunalk'
     PUBLISH_ARTIFACT_ID = 'rxpermissions'
-    PUBLISH_VERSION = '1.4'
+    PUBLISH_VERSION = '1.5'
 }
 
 apply from: '../gradle/android-release-aar.gradle'

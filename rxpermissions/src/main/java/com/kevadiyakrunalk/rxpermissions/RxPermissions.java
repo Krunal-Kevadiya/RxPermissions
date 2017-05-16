@@ -13,6 +13,7 @@ import android.util.Log;
 import java.lang.ref.WeakReference;
 
 public class RxPermissions  {
+    public static RxPermissions sSingleton;
     private boolean isShowRation;
     private boolean isShowSetting;
 
@@ -25,7 +26,14 @@ public class RxPermissions  {
     private WeakReference<Activity> mActivityReference;
 
     public static RxPermissions getInstance() {
-        return MyPermission.sSingleton;
+        if (sSingleton == null) {
+            synchronized (RxPermissions.class) {
+                if (sSingleton == null) {
+                    sSingleton = new RxPermissions();
+                }
+            }
+        }
+        return sSingleton;
     }
 
     public RxPermissions with(Activity activity) {
@@ -65,7 +73,7 @@ public class RxPermissions  {
         };
         permissionBean = new PermissionBean();
         permissionBean.setStrPackage(mActivityReference.get().getPackageName());
-        return MyPermission.sSingleton;
+        return sSingleton;
     }
 
     public PermissionBean getPermissionBean() {
@@ -75,7 +83,7 @@ public class RxPermissions  {
     public RxPermissions showRationalDialog(String title, String message) {
         permissionBean.setRationalTitle(title);
         permissionBean.setRationalMessage(message);
-        return MyPermission.sSingleton;
+        return sSingleton;
     }
 
     public RxPermissions showRationalDialog(int titleResId, int messageResId) {
@@ -83,13 +91,13 @@ public class RxPermissions  {
             permissionBean.setRationalTitle(mActivityReference.get().getString(titleResId));
             permissionBean.setRationalMessage(mActivityReference.get().getString(messageResId));
         }
-        return MyPermission.sSingleton;
+        return sSingleton;
     }
 
     public RxPermissions showAccessRemovedDialog(String title, String message) {
         permissionBean.setAccessRemovedTitle(title);
         permissionBean.setAccessRemovedMessage(message);
-        return MyPermission.sSingleton;
+        return sSingleton;
     }
 
     public RxPermissions showAccessRemovedDialog(int titleResId, int messageResId) {
@@ -97,7 +105,7 @@ public class RxPermissions  {
             permissionBean.setAccessRemovedTitle(mActivityReference.get().getString(titleResId));
             permissionBean.setAccessRemovedMessage(mActivityReference.get().getString(messageResId));
         }
-        return MyPermission.sSingleton;
+        return sSingleton;
     }
 
     public void checkPermission(boolean showRation, boolean showSetting, PermissionCallback callback, String... permission) {
